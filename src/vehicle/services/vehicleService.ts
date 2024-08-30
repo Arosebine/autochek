@@ -4,6 +4,7 @@ import { Vehicle } from '../entities/vehicle.entity';
 import { LoanApplication } from '../entities/loanApplication.entity';
 import calculateCarValuation from '../../utils/valuations';
 import { CarValuationInput } from '../interfaces/valuation';
+import checkLoanEligibility from '../../utils/loan';
 
 export class VehicleService {
   private vehicleRepository = AppDataSource.getRepository(Vehicle);
@@ -119,14 +120,6 @@ export class VehicleService {
     } catch (error) {
       throw new Error('Failed to get vehicle valuations');
     }
-    // const vehicle = await this.vehicleRepository.findOne({
-    //   where: { vin },
-    //   relations: ['valuations'],
-    // });
-    // if (!vehicle) {
-    //   throw new Error('Vehicle not found');
-    // }
-    // return vehicle.valuations;
   }
 
 
@@ -146,18 +139,30 @@ export class VehicleService {
 }
 
   async createLoanApplication(vin: string, loanApplication: Partial<LoanApplication>): Promise<LoanApplication> {
-    try{
-    const vehicle = await this.vehicleRepository.findOneBy({ vin });
-    if (!vehicle) {
-      throw new Error('Vehicle not found');
+    try {
+      const vehicle = await this.vehicleRepository.findOneBy({ vin });
+      if (!vehicle) {
+        throw new Error('Vehicle not found');
+      }
+
+      const vehicleWithArrayFeatures = {
+        ...vehicle,
+        features: Array.isArray(vehicle.features) ? vehicle.features : [vehicle.features]
+      };
+
+      const eligibilityCheck = checkLoanEligibility(loanApplication, vehicleWithArrayFeatures);
+      if(!eligibilityCheck){
+        throw new Error("Loan application is not eligible based on the predefined criteria")
+      }
+
+      const newLoanApplication = this.loanApplicationRepository.create({
+        ...loanApplication,
+        vehicle,
+        eligibilityStatus: 'eligible',
+      });
+      return this.loanApplicationRepository.save(newLoanApplication);
+    } catch (error) {
+      throw new Error('Failed to create loan application');
     }
-    const newLoanApplication = this.loanApplicationRepository.create({
-      ...loanApplication,
-      vehicle,
-    });
-    return this.loanApplicationRepository.save(newLoanApplication);
-  }catch(error){
-    throw new Error('Failed to create loan application');
-  }
-}
-}
+  }}
+
