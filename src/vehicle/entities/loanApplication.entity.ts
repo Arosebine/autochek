@@ -15,7 +15,7 @@ export class LoanApplication {
   @Column('decimal', { precision: 10, scale: 2 })
   loanAmount: number;
 
-  @Column()
+  @Column() 
   applicantCreditScore: number;
 
   @Column()

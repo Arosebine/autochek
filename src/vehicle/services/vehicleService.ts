@@ -4,13 +4,13 @@ import { Vehicle } from '../entities/vehicle.entity';
 import { LoanApplication } from '../entities/loanApplication.entity';
 import calculateCarValuation from '../../utils/valuations';
 import { CarValuationInput } from '../interfaces/valuation';
-import checkLoanEligibility from '../../utils/loan';
+import { calculateLoanEligibility } from '../../utils/loan';
 
 export class VehicleService {
   private vehicleRepository = AppDataSource.getRepository(Vehicle);
   private valuationRepository = AppDataSource.getRepository(Valuation);
   private loanApplicationRepository = AppDataSource.getRepository(LoanApplication);
-
+ 
   async createVehicle(data: Partial<Vehicle>): Promise<Vehicle> {
     try {
       const vehicle = this.vehicleRepository.create(data);
@@ -138,31 +138,51 @@ export class VehicleService {
   }
 }
 
-  async createLoanApplication(vin: string, loanApplication: Partial<LoanApplication>): Promise<LoanApplication> {
-    try {
+async createLoanApplication(vin: string, loanApplication: Partial<LoanApplication>): Promise<LoanApplication> {
+  try {
       const vehicle = await this.vehicleRepository.findOneBy({ vin });
       if (!vehicle) {
-        throw new Error('Vehicle not found');
+          throw new Error('Vehicle not found');
       }
 
       const vehicleWithArrayFeatures = {
-        ...vehicle,
-        features: Array.isArray(vehicle.features) ? vehicle.features : [vehicle.features]
+          ...vehicle,
+          features: Array.isArray(vehicle.features) ? vehicle.features : [vehicle.features],
       };
 
-      const eligibilityCheck = checkLoanEligibility(loanApplication, vehicleWithArrayFeatures);
-      if(!eligibilityCheck){
-        throw new Error("Loan application is not eligible based on the predefined criteria")
+      const vehicleValue = vehicle.estimatedValue
+
+      const { applicantIncome, applicantCreditScore, loanAmount, interestRate } = loanApplication;
+      console.log(loanApplication)
+
+      // if (!applicantIncome || !applicantCreditScore || !loanAmount) {
+      //     throw new Error('Missing required loan application information');
+      // }
+
+      // Check if the loan application is eligible based on the criteria
+      const isEligible = calculateLoanEligibility(
+          applicantIncome,
+          applicantCreditScore,
+          loanAmount,
+          vehicleValue,
+          interestRate
+      );
+      console.log(isEligible)
+
+      if (isEligible === false) {
+          throw new Error('Loan application is not eligible based on the predefined criteria');
       }
 
+      // Create a new loan application if eligible
       const newLoanApplication = this.loanApplicationRepository.create({
-        ...loanApplication,
-        vehicle,
-        eligibilityStatus: 'eligible',
+          ...loanApplication,
+          vehicle: vehicle,
+          eligibilityStatus: 'eligible',
       });
-      return this.loanApplicationRepository.save(newLoanApplication);
-    } catch (error) {
-      throw new Error('Failed to create loan application');
-    }
-  }}
+
+      return await this.loanApplicationRepository.save(newLoanApplication);
+  } catch (error) {
+      throw new Error(`Failed to create loan application: ${error.message}`);
+  }
+}}
 

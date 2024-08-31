@@ -102,9 +102,9 @@ export const getVehicleValuations = async (req: Request, res: Response) => {
 export const createLoan = async(req: Request, res: Response )=>{
   try{
     const { vin } = req.params;
-    const { applicantName, applicantIncome, loanAmount,} = req.body;
+    const { applicantName, applicantIncome, loanAmount, applicantCreditScore, loanTerm, interestRate } = req.body;
     const loanApplication = {
-      applicantName, applicantIncome, loanAmount,
+      applicantName, applicantIncome, loanAmount, applicantCreditScore, loanTerm, interestRate
     }
     const createLoan = await vehicleService.createLoanApplication(vin, loanApplication)
     return res.status(201).json({ message: "Loan created succuessfully", createLoan })
