@@ -19,13 +19,7 @@ export class LoanApplication {
   applicantCreditScore: number;
 
   @Column()
-  loanTerm: number;
-
-  @Column()
   eligibilityStatus: string
-
-  @Column()
-  interestRate: number
 
   @Column({ enum: [ "pending", "approved", "rejected"], default: "pending" })
   status: string;

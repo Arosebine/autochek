@@ -152,20 +152,18 @@ async createLoanApplication(vin: string, loanApplication: Partial<LoanApplicatio
 
       const vehicleValue = vehicle.estimatedValue
 
-      const { applicantIncome, applicantCreditScore, loanAmount, interestRate } = loanApplication;
-      console.log(loanApplication)
+      const { applicantIncome, applicantCreditScore, loanAmount,  } = loanApplication;
 
-      // if (!applicantIncome || !applicantCreditScore || !loanAmount) {
-      //     throw new Error('Missing required loan application information');
-      // }
+      if (!applicantIncome || !applicantCreditScore || !loanAmount) {
+          throw new Error('Missing required loan application information');
+      }
 
       // Check if the loan application is eligible based on the criteria
       const isEligible = calculateLoanEligibility(
           applicantIncome,
           applicantCreditScore,
           loanAmount,
-          vehicleValue,
-          interestRate
+          vehicleValue
       );
       console.log(isEligible)
 
